@@ -135,7 +135,7 @@ async function hashHex(bytes) {
 
 async function installBase(root, pkg) {
   phase = 'Checking local Celeste installation';
-  try { await root.getFileHandle(`.PublicPackage-${pkg.id}`); return; }
+  try { await root.getFileHandle(`.PublicPackage-${pkg.id}`); progress.value = 92; return; }
   catch (error) { if (error.name !== 'NotFoundError') throw error; }
   phase = 'Preparing Celeste base game';
   status.textContent = 'Celeste: downloading and installing the base game…';
@@ -158,10 +158,13 @@ async function installOfficialMod(root, pkg, index, count) {
     }
   } catch {}
   phase = index === 0 ? 'Downloading Mauve and required helpers' : `Downloading required helper ${index} of ${count - 1}`;
+  progress.value = 92 + (index / count) * 8;
   status.textContent = index === 0
     ? 'Downloading the Mauve map from its official GameBanana file…'
     : `Downloading required helper ${index} of ${count - 1}: ${pkg.label}…`;
-  const response = await fetch(pkg.url, {cache:'no-cache'});
+  let response;
+  try { response = await fetch(pkg.url, {cache:'no-cache'}); }
+  catch (error) { throw new Error(`Could not reach the official ${pkg.label} download at ${pkg.url}: ${error?.message || String(error)}`); }
   if (!response.ok) throw new Error(`${pkg.label} download failed (${response.status}). Please retry.`);
   const bytes = await response.arrayBuffer();
   if (bytes.byteLength !== pkg.size) throw new Error(`${pkg.label} download was incomplete. Please retry.`);

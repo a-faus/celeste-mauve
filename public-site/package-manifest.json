@@ -114,7 +114,7 @@
   "mauveRequiredMods": [
     {
       "id": "mauve-v1.1.4",
-      "url": "https://gamebanana.com/dl/1577967",
+      "url": "https://filecache53.gamebanana.com/mods/mauve_c67ac.zip",
       "file": "mauve.zip",
       "label": "Mauve",
       "sha256": "afd138adf7235bcc23503e34000e16db2914d89eb5865222bd2899edc56cf870",
@@ -122,7 +122,7 @@
     },
     {
       "id": "brokemiahelper-v1.8.5",
-      "url": "https://gamebanana.com/dl/1562484",
+      "url": "https://filecache45.gamebanana.com/mods/brokemiahelper_d9e46.zip",
       "file": "brokemiahelper.zip",
       "label": "Brokemia Helper",
       "sha256": "c80d7d71cdccef7c9b418e05d53debd197b59717d3cdeade72910ace33d4fbeb",
@@ -130,7 +130,7 @@
     },
     {
       "id": "maxhelpinghand-v1.40.10",
-      "url": "https://gamebanana.com/dl/1810305",
+      "url": "https://filecache28.gamebanana.com/mods/maddiehelpinghand-f9c4ea04.zip",
       "file": "maxhelpinghand.zip",
       "label": "Maddie's Helping Hand",
       "sha256": "d5257cb3da742165c6b051805220d72cd0c52f6b35c5de747513a543c17b4bf1",
@@ -138,7 +138,7 @@
     },
     {
       "id": "isagrabbag-v1.7.3",
-      "url": "https://gamebanana.com/dl/1440334",
+      "url": "https://filecache52.gamebanana.com/mods/isagrabbag_v173.zip",
       "file": "isagrabbag.zip",
       "label": "Isa's Grab Bag",
       "sha256": "557af62a5c932439d906b4a1838ad19dfabc28c97ee57de6490c2b905549f007",
@@ -146,7 +146,7 @@
     },
     {
       "id": "contorthelper-v1.5.5",
-      "url": "https://gamebanana.com/dl/544071",
+      "url": "https://filecache47.gamebanana.com/mods/contorthelper-155_0619e.zip",
       "file": "contorthelper.zip",
       "label": "Contort Helper",
       "sha256": "d8b42128a808e68d30329baa9299fdb41bf7d24743635dec3137c36bcc87956a",
@@ -154,7 +154,7 @@
     },
     {
       "id": "vivhelper-v1.14.10",
-      "url": "https://gamebanana.com/dl/1374906",
+      "url": "https://filecache36.gamebanana.com/mods/vivhelper.zip",
       "file": "vivhelper.zip",
       "label": "VivHelper",
       "sha256": "9a95f51659ccfcb78404f9610307918d6114fc824298fbb8493651ec7c80215a",
@@ -162,7 +162,7 @@
     },
     {
       "id": "gravityhelper-v1.2.30",
-      "url": "https://gamebanana.com/dl/1855046",
+      "url": "https://filecache31.gamebanana.com/mods/gravityhelper_1230.zip",
       "file": "gravityhelper.zip",
       "label": "Gravity Helper",
       "sha256": "50114c42725815a4910110abd9a7d30e48687d18acae02d235e0fff50bcaa8de",
