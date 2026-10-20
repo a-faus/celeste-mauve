@@ -1,6 +1,6 @@
 // Base data is fetched from a-faus/celeste-browser. Mod ZIPs are fetched from
 // their official GameBanana download URLs and are never mirrored in this repo.
-import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-saves.mjs';
+import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-saves.mjs?mauve-saves-v2';
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;

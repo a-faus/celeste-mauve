@@ -1,4 +1,4 @@
-import {installSaveRouting} from "../shared-saves.mjs";
+import {installSaveRouting} from "../shared-saves.mjs?mauve-saves-v2";
 await installSaveRouting("vanilla");
 
 var createDotnetRuntime = (() => {

@@ -80,6 +80,9 @@ export async function migrateSharedSaves(origin) {
 
 export async function installSaveRouting(origin) {
   if (routed) return;
+  // Webleste's WASM worker calls this with its mode string. Resolve OPFS in
+  // that worker's own realm before applying the same save routing there.
+  if (typeof origin === 'string') origin = await navigator.storage.getDirectory();
   const proto = FileSystemDirectoryHandle.prototype;
   const getDirectory = proto.getDirectoryHandle;
   const entries = proto.entries;
