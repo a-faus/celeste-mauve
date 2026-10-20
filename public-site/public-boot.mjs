@@ -4,16 +4,17 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v2';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
 const retry = document.querySelector('#retry');
+let phase = 'Starting Mauve';
 retry.addEventListener('click', () => location.reload());
 
 function fail(error) {
   title.textContent = 'Could not start Mauve';
-  status.textContent = error?.message || String(error);
+  status.textContent = `${phase}: ${error?.message || String(error)}`;
   status.classList.add('error');
   retry.style.display = 'inline-block';
   console.error(error);
@@ -86,14 +87,29 @@ function packageStream(pkg, update) {
         if (!current || offset >= current.length) {
           if (chunkIndex >= pkg.chunks.length) { controller.close(); return; }
           const chunk = pkg.chunks[chunkIndex++];
-          const response = await fetch(chunk.url);
-          if (!response.ok) throw new Error(`Base game download failed (${response.status}). Please try again.`);
-          current = new Uint8Array(await response.arrayBuffer());
+          let lastError;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            phase = `Downloading Celeste data chunk ${chunkIndex} of ${pkg.chunks.length} (attempt ${attempt}/3)`;
+            status.textContent = phase;
+            try {
+              const response = await fetch(chunk.url, {cache:'no-cache'});
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const bytes = new Uint8Array(await response.arrayBuffer());
+              if (bytes.length !== chunk.size) throw new Error(`incomplete file (${bytes.length} of ${chunk.size} bytes)`);
+              const digest = await crypto.subtle.digest('SHA-256', bytes);
+              const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+              if (hash !== chunk.sha256) throw new Error('SHA-256 integrity check failed');
+              current = bytes;
+              break;
+            } catch (error) {
+              lastError = error;
+              if (attempt === 3) {
+                throw new Error(`Could not load base-game chunk ${chunkIndex} of ${pkg.chunks.length} from ${chunk.url}: ${error?.message || String(error)}`);
+              }
+              await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+            }
+          }
           offset = 0;
-          if (current.length !== chunk.size) throw new Error('Incomplete base game download. Please try again.');
-          const digest = await crypto.subtle.digest('SHA-256', current);
-          const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-          if (hash !== chunk.sha256) throw new Error('A base game download failed its integrity check.');
           loaded += current.length;
           update(loaded / pkg.bytes * 100);
         }
@@ -118,8 +134,10 @@ async function hashHex(bytes) {
 }
 
 async function installBase(root, pkg) {
+  phase = 'Checking local Celeste installation';
   try { await root.getFileHandle(`.PublicPackage-${pkg.id}`); return; }
   catch (error) { if (error.name !== 'NotFoundError') throw error; }
+  phase = 'Preparing Celeste base game';
   status.textContent = 'Celeste: downloading and installing the base game…';
   const stream = packageStream(pkg, percent => { progress.value = percent * 0.92; });
   let last = 0;
@@ -139,6 +157,7 @@ async function installOfficialMod(root, pkg, index, count) {
       return;
     }
   } catch {}
+  phase = index === 0 ? 'Downloading Mauve and required helpers' : `Downloading required helper ${index} of ${count - 1}`;
   status.textContent = index === 0
     ? 'Downloading the Mauve map from its official GameBanana file…'
     : `Downloading required helper ${index} of ${count - 1}: ${pkg.label}…`;
@@ -154,6 +173,7 @@ async function installOfficialMod(root, pkg, index, count) {
 }
 
 async function start() {
+  phase = 'Checking browser requirements';
   if (!isSecureContext || !navigator.storage?.getDirectory || !globalThis.DecompressionStream) {
     throw new Error('Open this HTTPS page in an up-to-date desktop Chrome or Edge browser, outside Incognito.');
   }
@@ -165,6 +185,7 @@ async function start() {
     return;
   }
   const origin = await navigator.storage.getDirectory();
+  phase = 'Loading the Mauve package manifest';
   const root = await origin.getDirectoryHandle(NAMESPACE, {create:true});
   const manifestResponse = await fetch(MANIFEST_URL, {cache:'no-cache'});
   if (!manifestResponse.ok) throw new Error('Could not load the base game manifest. Please try again later.');
@@ -172,10 +193,12 @@ async function start() {
   if (!manifest.base?.chunks?.length) throw new Error('The base game manifest is missing its Celeste package.');
   title.textContent = 'Preparing Celeste: Mauve';
   await navigator.storage.persist?.().catch(() => false);
+  phase = 'Preparing Celeste base game';
   await installBase(root, manifest.base);
   const mods = manifest.mauveRequiredMods;
   if (!Array.isArray(mods) || mods.length !== 7) throw new Error('The Mauve map and its six required helper packages are not listed correctly.');
   for (let i = 0; i < mods.length; i++) await installOfficialMod(root, mods[i], i, mods.length);
+  phase = 'Connecting shared saves';
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
