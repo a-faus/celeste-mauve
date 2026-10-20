@@ -12,7 +12,7 @@ var e=!0;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
     ],
     "jsModuleNative": [
       {
-        "name": "dotnet.native.vanilla.shared-v2.js"
+        "name": "dotnet.native.vanilla.shared-v3.js"
       }
     ],
     "jsModuleRuntime": [

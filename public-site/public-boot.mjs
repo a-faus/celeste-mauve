@@ -1,6 +1,6 @@
 // Base data is fetched from a-faus/celeste-browser. Mod ZIPs are fetched from
 // their official GameBanana download URLs and are never mirrored in this repo.
-import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-saves.mjs?mauve-saves-v2';
+import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-saves.mjs?mauve-saves-v3';
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
@@ -208,7 +208,7 @@ async function start() {
   await writeText(root, '.PublicGameReady', 'mauve-only-v1');
   progress.value = 100;
   status.textContent = 'Starting Mauve…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v1');
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v2');
   document.querySelector('#startup').remove();
   document.querySelector('link[href="./public.css"]').remove();
 }

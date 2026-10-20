@@ -5,6 +5,9 @@ export const SAVE_LOCK = 'public-celeste-shared-save-session-v1';
 const LEGACY_MODES = ['vanilla', 'randomizer', 'spring-collab'];
 const LOCK_MODES = ['vanilla', 'randomizer', 'spring-collab', 'mauve'];
 const MAUVE_ROOT = 'public-celeste-mauve-v1';
+const ROUTING_MARKER = Symbol.for('a-faus.celeste-mauve.save-routing.v1');
+const ORIGINAL_GET_DIRECTORY = Symbol.for('a-faus.celeste-mauve.original-get-directory.v1');
+const ORIGINAL_ENTRIES = Symbol.for('a-faus.celeste-mauve.original-entries.v1');
 let routed = false;
 
 async function writeFile(folder, name, bytes) {
@@ -84,8 +87,14 @@ export async function installSaveRouting(origin) {
   // that worker's own realm before applying the same save routing there.
   if (typeof origin === 'string') origin = await navigator.storage.getDirectory();
   const proto = FileSystemDirectoryHandle.prototype;
-  const getDirectory = proto.getDirectoryHandle;
-  const entries = proto.entries;
+  // Different query-string module URLs create separate module instances. A
+  // prototype marker prevents one instance from wrapping another instance's
+  // wrapper and accidentally forwarding to a stale or cross-realm method.
+  if (proto[ROUTING_MARKER]) { routed = true; return; }
+  const getDirectory = proto[ORIGINAL_GET_DIRECTORY] || proto.getDirectoryHandle;
+  const entries = proto[ORIGINAL_ENTRIES] || proto.entries;
+  if (!proto[ORIGINAL_GET_DIRECTORY]) Object.defineProperty(proto, ORIGINAL_GET_DIRECTORY, {value:getDirectory});
+  if (!proto[ORIGINAL_ENTRIES]) Object.defineProperty(proto, ORIGINAL_ENTRIES, {value:entries});
   const root = await getDirectory.call(origin, MAUVE_ROOT, {create:true});
   const celeste = await getDirectory.call(root, 'Celeste', {create:true});
   // Keep the real directory for WASM type checks; redirect reads and writes to
@@ -109,6 +118,7 @@ export async function installSaveRouting(origin) {
   proto[Symbol.asyncIterator] = proto.entries;
   proto.values = async function*() { for await (const [, handle] of this.entries()) yield handle; };
   proto.keys = async function*() { for await (const [name] of this.entries()) yield name; };
+  Object.defineProperty(proto, ROUTING_MARKER, {value:true});
   routed = true;
 }
 
