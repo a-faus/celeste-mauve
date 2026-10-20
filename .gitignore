@@ -1,0 +1,4 @@
+# Do not commit game chunks or local player saves into this small launcher repo.
+/public-site/data/*.bin
+*.sav
+Saves/
