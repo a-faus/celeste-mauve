@@ -4,7 +4,7 @@ Play the Celeste map [Mauve by smoothee](https://gamebanana.com/mods/404124) at:
 
 **https://a-faus.github.io/celeste-mauve/**
 
-This is a small, separate GitHub Pages launcher. It does not include Randomizer, Spring Collab, or other map packs. The browser downloads the base-game package from the separate `a-faus/celeste-browser` repository, installs the browser-compatible Everest 1.6531 runtime in Webleste's expected location, and downloads Mauve plus only its five declared helper mods directly from their official GameBanana files. On first launch, Webleste's patcher generates a matching `CustomCeleste.dll` and browser-compatible hooks before starting the game; the generated game assembly is kept only in that browser's local storage. Mod ZIPs are not mirrored in this repository. See the site's credits page for source links and licenses.
+This is a small, separate GitHub Pages launcher. It does not include Randomizer, Spring Collab, or other map packs. The browser downloads the base-game package from the separate `a-faus/celeste-browser` repository, installs a prepatched browser-compatible Everest runtime, and downloads Mauve plus only its five declared helper mods directly from their official GameBanana files. The runtime bundle uses the same prepatched game assembly and compatible Everest files as the known-working Celeste browser build, so Webleste does not need to patch Everest during first launch. The public Mauve bundle contains no Randomizer mod archive or save files. Mod ZIPs are not mirrored in this repository. See the site's credits page for source links and licenses.
 
 ## Saves
 
@@ -12,6 +12,6 @@ Mauve routes the game's `Celeste/Saves` directory to the same browser-local OPFS
 
 ## First launch
 
-The first run downloads about 830 MiB of base-game data, roughly 10 MiB of the Everest runtime, and about 9 MiB of Mauve/helper archives from their source hosts. It also generates the browser-compatible game assembly locally before launching. Allow about 1.5 GB of browser storage for the isolated game installation. Current desktop Chrome or Edge with site data, service workers, and threaded WebAssembly enabled is recommended.
+The first run downloads about 830 MiB of base-game data, roughly 11 MiB of the prepatched browser runtime, and about 9 MiB of Mauve/helper archives from their source hosts. Allow about 1.5 GB of browser storage for the isolated game installation. Current desktop Chrome or Edge with site data, service workers, and threaded WebAssembly enabled is recommended.
 
 This is an unofficial community browser launcher, not an official Celeste release.

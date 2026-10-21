@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v6';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v7';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -269,29 +269,33 @@ async function start() {
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-ready-v4');
+  await writeText(root, '.PublicGameReady', 'mauve-ready-v5');
   progress.value = 100;
   status.textContent = 'Starting the browser game runtime…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v9');
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v10');
   await waitForGameReady();
 
+  // This runtime was already patched against the exact Webleste/Everest build
+  // used by the known-working Celeste browser package. Re-running Webleste's
+  // patcher against the newer Everest archive fails while relinking Everest.
+  const prepatched = await root.getFileHandle('CustomCeleste.dll');
+  const prepatchedFile = await prepatched.getFile();
+  if (prepatchedFile.size < 1_000_000) {
+    throw new Error('The prepatched browser game assembly is missing or incomplete. Reload to retry the runtime download.');
+  }
+  const digest = await hashHex(await prepatchedFile.arrayBuffer());
+  if (digest !== manifest.mauveFramework.prepatchedCelesteSha256) {
+    throw new Error('The prepatched browser game assembly failed its integrity check. Reload to retry the runtime download.');
+  }
   const patchMarker = `.PublicPatch-${manifest.mauveFramework.id}`;
-  let patched = false;
+  let prepared = false;
   try {
     await root.getFileHandle(patchMarker);
-    patched = true;
+    prepared = true;
   } catch (error) {
     if (error.name !== 'NotFoundError') throw error;
   }
-  if (!patched) {
-    phase = 'Patching Celeste for the installed Everest version';
-    status.textContent = 'Applying the browser compatibility patch (first launch only)…';
-    const patcher = globalThis.wasm?.exports?.Patcher;
-    if (typeof patcher?.PatchCeleste !== 'function') {
-      throw new Error('The Webleste patcher was not available after runtime initialization.');
-    }
-    const success = await patcher.PatchCeleste(true);
-    if (!success) throw new Error('Webleste could not patch Celeste with the installed Everest runtime.');
+  if (!prepared) {
     await writeText(root, patchMarker, manifest.mauveFramework.id);
   }
 

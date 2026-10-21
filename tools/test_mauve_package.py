@@ -14,8 +14,8 @@ SITE = ROOT / "public-site"
 def main() -> None:
     manifest = json.loads((SITE / "package-manifest.json").read_text(encoding="utf-8"))
     framework = manifest["mauveFramework"]
-    assert framework["id"] == "mauve-framework-v4"
-    assert framework["version"] == "1.6531.0"
+    assert framework["id"] == "mauve-framework-v5"
+    assert framework["version"] == "known-working Webleste browser runtime"
     assert len(framework["chunks"]) == 1
     chunk = framework["chunks"][0]
     archive_path = SITE / chunk["url"].removeprefix("./")
@@ -42,11 +42,16 @@ def main() -> None:
     assert "CustomCeleste.dll" in names
     assert "Celeste/Everest/Celeste.Mod.mm.dll" in names
     assert "Celeste/Everest/Celeste.Mod.mm.deps.json" in names
-    assert "Celeste/Everest/EverestSplash/EverestSplash.dll" in names
     assert "Celeste/Everest/MMHOOK_Celeste.dll" in names
     assert "Celeste/Everest/MonoMod.RuntimeDetour.dll" in names
     assert "Celeste/Everest/MonoMod.Core.dll" in names
     assert "Celeste/Everest/LICENSE.txt" in names
+    assert "FNA.dll" in names
+    assert "Microsoft.Xna.Framework.dll" in names
+    with tarfile.open(archive_path, mode="r:gz") as archive:
+        custom_celeste = archive.extractfile("CustomCeleste.dll")
+        assert custom_celeste is not None
+        assert hashlib.sha256(custom_celeste.read()).hexdigest() == framework["prepatchedCelesteSha256"]
     assert len(names) == framework["files"]
 
     mods = manifest["mauveRequiredMods"]
@@ -66,10 +71,10 @@ def main() -> None:
     assert "url.searchParams.set('prepatched', '1')" in boot
     assert "url.searchParams.delete('everest')" in boot
     assert "url.searchParams.delete('autoplay')" in boot
-    assert "wasm?.exports?.Patcher" in boot
-    assert "patcher.PatchCeleste(true)" in boot
+    assert "prepatchedCelesteSha256" in boot
+    assert "patcher.PatchCeleste(true)" not in boot
     assert "url.searchParams.set('mode', MODE)" in boot
-    print(f"PASS: {framework['files']} Everest {framework['version']} runtime files, first-launch browser patching, no Randomizer or saves, Mauve plus its five declared helpers.")
+    print(f"PASS: {framework['files']} prepatched Webleste runtime files, runtime integrity checks, no Randomizer or saves, Mauve plus its five declared helpers.")
 
 
 if __name__ == "__main__":
