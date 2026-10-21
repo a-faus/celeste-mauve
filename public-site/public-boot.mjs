@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v3';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v4';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -191,6 +191,29 @@ async function installOfficialMod(root, pkg, index, count) {
   progress.value = 92 + ((index + 1) / count) * 8;
 }
 
+async function removeObsoleteMauveFiles(root) {
+  const folders = [];
+  folders.push(await root.getDirectoryHandle('Mods', {create:true}));
+  try {
+    const celeste = await root.getDirectoryHandle('Celeste');
+    folders.push(await celeste.getDirectoryHandle('Mods'));
+  } catch (error) {
+    if (error.name !== 'NotFoundError') throw error;
+  }
+  for (const folder of folders) {
+    for (const name of ['Randomizer.zip', 'gravityhelper.zip']) {
+      try { await folder.removeEntry(name); }
+      catch (error) { if (error.name !== 'NotFoundError') throw error; }
+    }
+    try {
+      await folder.getDirectoryHandle('Cache');
+      await folder.removeEntry('Cache', {recursive:true});
+    } catch (error) {
+      if (!['NotFoundError', 'TypeMismatchError'].includes(error.name)) throw error;
+    }
+  }
+}
+
 async function start() {
   phase = 'Checking browser requirements';
   if (!isSecureContext || !navigator.storage?.getDirectory || !globalThis.DecompressionStream) {
@@ -218,16 +241,17 @@ async function start() {
   await installBase(root, manifest.base);
   await installMauveFramework(root, manifest.mauveFramework);
   const mods = manifest.mauveRequiredMods;
-  if (!Array.isArray(mods) || mods.length !== 7) throw new Error('The Mauve map and its six required helper packages are not listed correctly.');
+  if (!Array.isArray(mods) || mods.length !== 6) throw new Error('The Mauve map and its five declared helper packages are not listed correctly.');
+  await removeObsoleteMauveFiles(root);
   for (let i = 0; i < mods.length; i++) await installOfficialMod(root, mods[i], i, mods.length);
   phase = 'Connecting shared saves';
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v1');
+  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v2');
   progress.value = 100;
   status.textContent = 'Starting Mauve with Everest…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v3');
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v4');
   document.querySelector('#startup').remove();
   document.querySelector('link[href="./public.css"]').remove();
 }

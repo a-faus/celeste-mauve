@@ -159,25 +159,18 @@
       "label": "VivHelper",
       "sha256": "9a95f51659ccfcb78404f9610307918d6114fc824298fbb8493651ec7c80215a",
       "size": 6543567
-    },
-    {
-      "id": "gravityhelper-v1.2.30",
-      "url": "https://filecache31.gamebanana.com/mods/gravityhelper_1230.zip",
-      "file": "gravityhelper.zip",
-      "label": "Gravity Helper",
-      "sha256": "50114c42725815a4910110abd9a7d30e48687d18acae02d235e0fff50bcaa8de",
-      "size": 748992
     }
   ],
   "mauveFramework": {
-    "id": "mauve-framework-v1",
-    "bytes": 9800577,
-    "files": 58,
+    "id": "mauve-framework-v2",
+    "version": "1.6531.0",
+    "bytes": 10528561,
+    "files": 60,
     "chunks": [
       {
         "url": "./data/mauve-framework.tar.gz",
-        "size": 9800577,
-        "sha256": "40a72d41c0aa32d6127fcd200eb1085772c05eea7d905d3f4f1b92e7f0a2f739"
+        "size": 10528561,
+        "sha256": "3e42dd081b76257e477a7c56ceac5b77532e658390061547a8a02e3740c79df3"
       }
     ]
   }

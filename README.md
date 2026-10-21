@@ -4,7 +4,7 @@ Play the Celeste map [Mauve by smoothee](https://gamebanana.com/mods/404124) at:
 
 **https://a-faus.github.io/celeste-mauve/**
 
-This is a small, separate GitHub Pages launcher. It does not include Randomizer, Spring Collab, or other map packs. The browser downloads the base-game package from the separate `a-faus/celeste-browser` repository, installs a clean prepatched browser-compatible Everest runtime, and downloads Mauve plus only its six required helper mods directly from their official GameBanana files. Mod ZIPs are not mirrored in this repository. The startup path follows the working Randomizer page's prepatched launch flow, but installs no Randomizer mod. See the site's credits page for source links and licenses.
+This is a small, separate GitHub Pages launcher. It does not include Randomizer, Spring Collab, or other map packs. The browser downloads the base-game package from the separate `a-faus/celeste-browser` repository, installs a clean prepatched browser-compatible Everest 1.6531 runtime, and downloads Mauve plus only its five declared helper mods directly from their official GameBanana files. Mod ZIPs are not mirrored in this repository. See the site's credits page for source links and licenses.
 
 ## Saves
 

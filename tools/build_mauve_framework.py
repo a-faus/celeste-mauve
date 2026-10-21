@@ -1,8 +1,9 @@
-"""Build the clean, prepatched Everest support package used by Mauve Pages.
+"""Build the clean Everest 1.6531 runtime package used by Mauve Pages.
 
-The archive source is the existing browser-compatible Randomizer runtime bundle.
-Only Everest runtime files and the repaired CustomCeleste.dll are copied; no
-Randomizer mod archive, saves, cache files, or debug symbols are included.
+The source is an official Everest stable archive. Only its managed runtime
+assemblies, dependency manifest, FNA support assembly and MIT notice are copied,
+along with the browser compatibility patch. No map mods, saves or debug symbols
+are included.
 """
 from __future__ import annotations
 
@@ -12,12 +13,13 @@ import hashlib
 import io
 import json
 import tarfile
+import zipfile
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "public-site"
-PACKAGE_ID = "mauve-framework-v1"
-ALLOWED_EXTENSIONS = {".dll", ".xml", ".json", ".yaml", ".png"}
+PACKAGE_ID = "mauve-framework-v2"
+EVEREST_VERSION = "1.6531.0"
 
 
 def clean_name(raw: str) -> str:
@@ -40,12 +42,12 @@ def private(name: str) -> bool:
     )
 
 
-def include(name: str) -> bool:
+def include_browser_runtime(name: str) -> bool:
     path = PurePosixPath(name)
     return (
         name.startswith("Celeste/Everest/")
         and len(path.parts) == 3
-        and path.suffix.lower() in ALLOWED_EXTENSIONS
+        and path.suffix.lower() in {".dll", ".json", ".xml", ".yaml", ".png"}
     ) or name in {"FNA.dll", "Microsoft.Xna.Framework.dll"}
 
 
@@ -61,37 +63,64 @@ def add_bytes(dest: tarfile.TarFile, name: str, data: bytes) -> None:
     dest.addfile(info, io.BytesIO(data))
 
 
-def build(archive: Path, custom_celeste: Path) -> dict:
+def build(archive: Path, browser_runtime: Path, custom_celeste: Path) -> dict:
     output = SITE / "data" / "mauve-framework.tar.gz"
     output.parent.mkdir(parents=True, exist_ok=True)
+    selected: dict[str, bytes] = {}
     included: list[str] = []
 
     with (
         output.open("wb") as raw,
         gzip.GzipFile(filename="", fileobj=raw, mode="wb", compresslevel=6, mtime=0) as compressed,
         tarfile.open(fileobj=compressed, mode="w|", format=tarfile.USTAR_FORMAT) as dest,
-        tarfile.open(archive, mode="r:*") as source,
     ):
-        for member in source:
-            name = clean_name(member.name)
-            if not member.isfile() or private(name) or not include(name):
-                continue
-            stream = source.extractfile(member)
-            if stream is None:
-                raise ValueError(f"Could not read runtime file: {name}")
-            info = tarfile.TarInfo(name)
-            info.size = member.size
-            info.mode = 0o644
-            info.uid = info.gid = 0
-            info.uname = info.gname = ""
-            info.mtime = 0
-            dest.addfile(info, stream)
+        # Keep the prepatched browser runtime pieces (including its generated
+        # Celeste hooks), then overlay Everest's current managed assemblies.
+        with tarfile.open(browser_runtime, mode="r:*") as source:
+            for member in source:
+                name = clean_name(member.name)
+                if not member.isfile() or private(name) or not include_browser_runtime(name):
+                    continue
+                stream = source.extractfile(member)
+                if stream is None:
+                    raise ValueError(f"Could not read browser runtime file: {name}")
+                selected[name] = stream.read()
+
+        with zipfile.ZipFile(archive) as source:
+            for member in source.infolist():
+                name = clean_name(member.filename)
+                if member.is_dir() or private(name):
+                    continue
+
+                parts = PurePosixPath(name).parts
+                target = None
+                if len(parts) == 2 and parts[0] == "main" and parts[1].lower().endswith(".dll"):
+                    if parts[1] != "MiniInstaller.dll":
+                        target = f"Celeste/Everest/{parts[1]}"
+                elif name == "main/Celeste.Mod.mm.deps.json":
+                    target = "Celeste/Everest/Celeste.Mod.mm.deps.json"
+                elif name == "main/EverestSplash/EverestSplash.dll":
+                    target = "Celeste/Everest/EverestSplash.dll"
+                if target is None:
+                    continue
+
+                selected[target] = source.read(member)
+
+        selected["Celeste/Everest/LICENSE.txt"] = (SITE / "EVEREST-LICENSE.txt").read_bytes()
+        selected["CustomCeleste.dll"] = custom_celeste.read_bytes()
+        for name, data in sorted(selected.items()):
+            add_bytes(dest, name, data)
             included.append(name)
 
-        add_bytes(dest, "CustomCeleste.dll", custom_celeste.read_bytes())
-        included.append("CustomCeleste.dll")
-
-    required = {"CustomCeleste.dll", "Celeste/Everest/Celeste.Mod.mm.dll"}
+    required = {
+        "CustomCeleste.dll",
+        "Celeste/Everest/Celeste.Mod.mm.dll",
+        "Celeste/Everest/MMHOOK_Celeste.dll",
+        "Celeste/Everest/Celeste.Mod.mm.deps.json",
+        "Celeste/Everest/MonoMod.RuntimeDetour.dll",
+        "Celeste/Everest/MonoMod.Core.dll",
+        "Celeste/Everest/LICENSE.txt",
+    }
     if not required.issubset(included):
         raise ValueError(f"The support archive is missing required files: {sorted(required - set(included))}")
     if any("Randomizer" in name for name in included):
@@ -102,6 +131,7 @@ def build(archive: Path, custom_celeste: Path) -> dict:
     data = output.read_bytes()
     entry = {
         "id": PACKAGE_ID,
+        "version": EVEREST_VERSION,
         "bytes": len(data),
         "files": len(included),
         "chunks": [{
@@ -116,6 +146,7 @@ def build(archive: Path, custom_celeste: Path) -> dict:
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     audit = {
+        "everestVersion": EVEREST_VERSION,
         "frameworkFiles": len(included),
         "randomizerFiles": 0,
         "saveFiles": 0,
@@ -130,9 +161,10 @@ def build(archive: Path, custom_celeste: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--everest-archive", required=True, type=Path)
+    parser.add_argument("--browser-runtime", required=True, type=Path)
     parser.add_argument("--custom-celeste", required=True, type=Path)
     args = parser.parse_args()
-    build(args.everest_archive, args.custom_celeste)
+    build(args.everest_archive, args.browser_runtime, args.custom_celeste)
 
 
 if __name__ == "__main__":
