@@ -14,7 +14,7 @@ SITE = ROOT / "public-site"
 def main() -> None:
     manifest = json.loads((SITE / "package-manifest.json").read_text(encoding="utf-8"))
     framework = manifest["mauveFramework"]
-    assert framework["id"] == "mauve-framework-v2"
+    assert framework["id"] == "mauve-framework-v3"
     assert framework["version"] == "1.6531.0"
     assert len(framework["chunks"]) == 1
     chunk = framework["chunks"][0]
@@ -40,10 +40,13 @@ def main() -> None:
 
     assert len(names) == len(set(names)), "Runtime archive must not contain duplicate paths."
     assert "CustomCeleste.dll" in names
-    assert "Celeste/Everest/Celeste.Mod.mm.dll" in names
+    assert "Celeste.Mod.mm.dll" in names
+    assert "Celeste.Mod.mm.deps.json" in names
+    assert "EverestSplash/EverestSplash.dll" in names
+    assert "MMHOOK_Celeste.dll" in names
     assert "Celeste/Everest/MMHOOK_Celeste.dll" in names
-    assert "Celeste/Everest/MonoMod.RuntimeDetour.dll" in names
-    assert "Celeste/Everest/MonoMod.Core.dll" in names
+    assert "MonoMod.RuntimeDetour.dll" in names
+    assert "MonoMod.Core.dll" in names
     assert "Celeste/Everest/LICENSE.txt" in names
     assert len(names) == framework["files"]
 

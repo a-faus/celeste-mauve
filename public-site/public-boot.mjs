@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v4';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v5';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -248,10 +248,10 @@ async function start() {
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v2');
+  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v3');
   progress.value = 100;
   status.textContent = 'Starting Mauve with Everest…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v4');
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v5');
   document.querySelector('#startup').remove();
   document.querySelector('link[href="./public.css"]').remove();
 }

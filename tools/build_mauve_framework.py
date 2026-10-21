@@ -18,7 +18,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "public-site"
-PACKAGE_ID = "mauve-framework-v2"
+PACKAGE_ID = "mauve-framework-v3"
 EVEREST_VERSION = "1.6531.0"
 
 
@@ -96,11 +96,13 @@ def build(archive: Path, browser_runtime: Path, custom_celeste: Path) -> dict:
                 target = None
                 if len(parts) == 2 and parts[0] == "main" and parts[1].lower().endswith(".dll"):
                     if parts[1] != "MiniInstaller.dll":
-                        target = f"Celeste/Everest/{parts[1]}"
+                        # Everest's loader assemblies are colocated with Celeste.exe.
+                        # The Celeste/Everest directory is user-data, not the game root.
+                        target = parts[1]
                 elif name == "main/Celeste.Mod.mm.deps.json":
-                    target = "Celeste/Everest/Celeste.Mod.mm.deps.json"
+                    target = "Celeste.Mod.mm.deps.json"
                 elif name == "main/EverestSplash/EverestSplash.dll":
-                    target = "Celeste/Everest/EverestSplash.dll"
+                    target = "EverestSplash/EverestSplash.dll"
                 if target is None:
                     continue
 
@@ -108,17 +110,23 @@ def build(archive: Path, browser_runtime: Path, custom_celeste: Path) -> dict:
 
         selected["Celeste/Everest/LICENSE.txt"] = (SITE / "EVEREST-LICENSE.txt").read_bytes()
         selected["CustomCeleste.dll"] = custom_celeste.read_bytes()
+        browser_hook = selected.get("Celeste/Everest/MMHOOK_Celeste.dll")
+        if browser_hook is None:
+            raise ValueError("The prepatched browser runtime is missing MMHOOK_Celeste.dll")
+        selected["MMHOOK_Celeste.dll"] = browser_hook
         for name, data in sorted(selected.items()):
             add_bytes(dest, name, data)
             included.append(name)
 
     required = {
         "CustomCeleste.dll",
-        "Celeste/Everest/Celeste.Mod.mm.dll",
+        "Celeste.Mod.mm.dll",
+        "MMHOOK_Celeste.dll",
         "Celeste/Everest/MMHOOK_Celeste.dll",
-        "Celeste/Everest/Celeste.Mod.mm.deps.json",
-        "Celeste/Everest/MonoMod.RuntimeDetour.dll",
-        "Celeste/Everest/MonoMod.Core.dll",
+        "Celeste.Mod.mm.deps.json",
+        "MonoMod.RuntimeDetour.dll",
+        "MonoMod.Core.dll",
+        "EverestSplash/EverestSplash.dll",
         "Celeste/Everest/LICENSE.txt",
     }
     if not required.issubset(included):

@@ -162,15 +162,15 @@
     }
   ],
   "mauveFramework": {
-    "id": "mauve-framework-v2",
+    "id": "mauve-framework-v3",
     "version": "1.6531.0",
-    "bytes": 10528561,
-    "files": 60,
+    "bytes": 15987573,
+    "files": 89,
     "chunks": [
       {
         "url": "./data/mauve-framework.tar.gz",
-        "size": 10528561,
-        "sha256": "3e42dd081b76257e477a7c56ceac5b77532e658390061547a8a02e3740c79df3"
+        "size": 15987573,
+        "sha256": "94c57fa484903b8af10791b94900a2a09a96e369e3a4551170f3aca437f73986"
       }
     ]
   }
