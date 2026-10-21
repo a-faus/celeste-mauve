@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v7';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v8';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -128,9 +128,40 @@ async function writeText(folder, name, text) {
   await writer.close();
 }
 
+async function writeBytes(folder, name, bytes) {
+  const file = await folder.getFileHandle(name, {create:true});
+  const writer = await file.createWritable();
+  try { await writer.write(bytes); await writer.close(); }
+  catch (error) { await writer.abort().catch(() => {}); throw error; }
+}
+
 async function hashHex(bytes) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function backupAndRemoveLegacyCelesteDll(root) {
+  let legacy;
+  try { legacy = await root.getFileHandle('Celeste.dll'); }
+  catch (error) { if (error.name === 'NotFoundError') return; throw error; }
+
+  const original = await legacy.getFile();
+  const bytes = await original.arrayBuffer();
+  const hash = await hashHex(bytes);
+  const backupName = `.PublicLegacyCeleste-${hash.slice(0, 16)}.dll.bak`;
+  let backup;
+  try { backup = await root.getFileHandle(backupName); }
+  catch (error) {
+    if (error.name !== 'NotFoundError') throw error;
+    await writeBytes(root, backupName, bytes);
+    backup = await root.getFileHandle(backupName);
+  }
+
+  const preserved = await backup.getFile();
+  if (preserved.size !== original.size || await hashHex(await preserved.arrayBuffer()) !== hash) {
+    throw new Error('The previous Celeste.dll could not be safely backed up; the original file was left untouched.');
+  }
+  await root.removeEntry('Celeste.dll');
 }
 
 async function installBase(root, pkg) {
@@ -269,33 +300,32 @@ async function start() {
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-ready-v5');
+  await writeText(root, '.PublicGameReady', 'mauve-ready-v6');
   progress.value = 100;
   status.textContent = 'Starting the browser game runtime…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v10');
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v11');
   await waitForGameReady();
 
-  // This runtime was already patched against the exact Webleste/Everest build
-  // used by the known-working Celeste browser package. Re-running Webleste's
-  // patcher against the newer Everest archive fails while relinking Everest.
-  const prepatched = await root.getFileHandle('CustomCeleste.dll');
-  const prepatchedFile = await prepatched.getFile();
-  if (prepatchedFile.size < 1_000_000) {
-    throw new Error('The prepatched browser game assembly is missing or incomplete. Reload to retry the runtime download.');
-  }
-  const digest = await hashHex(await prepatchedFile.arrayBuffer());
-  if (digest !== manifest.mauveFramework.prepatchedCelesteSha256) {
-    throw new Error('The prepatched browser game assembly failed its integrity check. Reload to retry the runtime download.');
-  }
   const patchMarker = `.PublicPatch-${manifest.mauveFramework.id}`;
-  let prepared = false;
+  let patched = false;
   try {
     await root.getFileHandle(patchMarker);
-    prepared = true;
+    patched = true;
   } catch (error) {
     if (error.name !== 'NotFoundError') throw error;
   }
-  if (!prepared) {
+  if (!patched) {
+    phase = 'Preserving the previous Celeste assembly';
+    status.textContent = 'Safely backing up the old game assembly before preparing Everest…';
+    await backupAndRemoveLegacyCelesteDll(root);
+    phase = 'Patching Celeste for the installed Everest version';
+    status.textContent = 'Applying the browser compatibility patch from the clean Celeste executable (first launch only)…';
+    const patcher = globalThis.wasm?.exports?.Patcher;
+    if (typeof patcher?.PatchCeleste !== 'function') {
+      throw new Error('The Webleste patcher was not available after runtime initialization.');
+    }
+    const success = await patcher.PatchCeleste(true);
+    if (!success) throw new Error('Webleste could not patch the clean Celeste executable with the installed Everest runtime.');
     await writeText(root, patchMarker, manifest.mauveFramework.id);
   }
 

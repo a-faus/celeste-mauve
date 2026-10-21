@@ -1,20 +1,18 @@
 {
-  "runtime": "known-working Webleste browser runtime",
-  "frameworkFiles": 59,
+  "everestVersion": "1.6531.0",
+  "frameworkFiles": 60,
   "randomizerFiles": 0,
   "saveFiles": 0,
-  "prepatchedCelesteSha256": "1ed5ebff05f6dc7f992f0370bdba9586a20180eef3c7cc9aec2efd4e677f4950",
   "package": {
-    "id": "mauve-framework-v5",
-    "version": "known-working Webleste browser runtime",
-    "bytes": 9802496,
-    "files": 59,
-    "prepatchedCelesteSha256": "1ed5ebff05f6dc7f992f0370bdba9586a20180eef3c7cc9aec2efd4e677f4950",
+    "id": "mauve-framework-v6",
+    "version": "1.6531.0",
+    "bytes": 9104294,
+    "files": 60,
     "chunks": [
       {
         "url": "./data/mauve-framework.tar.gz",
-        "size": 9802496,
-        "sha256": "343440cce54d3d4f40fa19fea79ca3518e529eba49daaa3b56445728ccf9bf59"
+        "size": 9104294,
+        "sha256": "f58f5ec2f9b0e2c9d8475acbda571c8e073c31bcfa976776d9fdaf68c76b7c67"
       }
     ]
   }
