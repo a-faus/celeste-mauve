@@ -1,0 +1,17 @@
+{
+  "frameworkFiles": 58,
+  "randomizerFiles": 0,
+  "saveFiles": 0,
+  "package": {
+    "id": "mauve-framework-v1",
+    "bytes": 9800577,
+    "files": 58,
+    "chunks": [
+      {
+        "url": "./data/mauve-framework.tar.gz",
+        "size": 9800577,
+        "sha256": "40a72d41c0aa32d6127fcd200eb1085772c05eea7d905d3f4f1b92e7f0a2f739"
+      }
+    ]
+  }
+}

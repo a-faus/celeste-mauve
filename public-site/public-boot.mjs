@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v2';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v3';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -135,16 +135,32 @@ async function hashHex(bytes) {
 
 async function installBase(root, pkg) {
   phase = 'Checking local Celeste installation';
-  try { await root.getFileHandle(`.PublicPackage-${pkg.id}`); progress.value = 92; return; }
+  try { await root.getFileHandle(`.PublicPackage-${pkg.id}`); progress.value = 86; return; }
   catch (error) { if (error.name !== 'NotFoundError') throw error; }
   phase = 'Preparing Celeste base game';
   status.textContent = 'Celeste: downloading and installing the base game…';
-  const stream = packageStream(pkg, percent => { progress.value = percent * 0.92; });
+  const stream = packageStream(pkg, percent => { progress.value = percent * 0.86; });
   let last = 0;
   await extractTar(stream, root, name => {
     if (performance.now() - last > 300) { status.textContent = `Celeste: installing ${name}`; last = performance.now(); }
   });
   await writeText(root, `.PublicPackage-${pkg.id}`, pkg.id);
+}
+
+async function installMauveFramework(root, pkg) {
+  if (!pkg?.chunks?.length) throw new Error('The browser-compatible Everest runtime package is missing.');
+  const marker = `.PublicPackage-${pkg.id}`;
+  try { await root.getFileHandle(marker); progress.value = 92; return; }
+  catch (error) { if (error.name !== 'NotFoundError') throw error; }
+  phase = 'Installing the prepatched Everest runtime';
+  status.textContent = 'Installing the browser-compatible Everest loader…';
+  const stream = packageStream(pkg, percent => { progress.value = 86 + percent * 0.06; });
+  let last = 0;
+  await extractTar(stream, root, name => {
+    if (performance.now() - last > 300) { status.textContent = `Everest: installing ${name}`; last = performance.now(); }
+  });
+  await writeText(root, marker, pkg.id);
+  progress.value = 92;
 }
 
 async function installOfficialMod(root, pkg, index, count) {
@@ -193,11 +209,14 @@ async function start() {
   const manifestResponse = await fetch(MANIFEST_URL, {cache:'no-cache'});
   if (!manifestResponse.ok) throw new Error('Could not load the base game manifest. Please try again later.');
   const manifest = await manifestResponse.json();
-  if (!manifest.base?.chunks?.length) throw new Error('The base game manifest is missing its Celeste package.');
+  if (!manifest.base?.chunks?.length || !manifest.mauveFramework?.chunks?.length) {
+    throw new Error('The base game or prepatched Everest runtime package is missing.');
+  }
   title.textContent = 'Preparing Celeste: Mauve';
   await navigator.storage.persist?.().catch(() => false);
   phase = 'Preparing Celeste base game';
   await installBase(root, manifest.base);
+  await installMauveFramework(root, manifest.mauveFramework);
   const mods = manifest.mauveRequiredMods;
   if (!Array.isArray(mods) || mods.length !== 7) throw new Error('The Mauve map and its six required helper packages are not listed correctly.');
   for (let i = 0; i < mods.length; i++) await installOfficialMod(root, mods[i], i, mods.length);
@@ -205,10 +224,10 @@ async function start() {
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-only-v1');
+  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v1');
   progress.value = 100;
-  status.textContent = 'Starting Mauve…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v2');
+  status.textContent = 'Starting Mauve with Everest…';
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v3');
   document.querySelector('#startup').remove();
   document.querySelector('link[href="./public.css"]').remove();
 }
@@ -216,8 +235,8 @@ async function start() {
 const url = new URL(location.href);
 url.searchParams.set('mode', MODE);
 url.searchParams.set('mods', '1');
-url.searchParams.set('everest', '1');
-url.searchParams.delete('prepatched');
+url.searchParams.set('prepatched', '1');
+url.searchParams.delete('everest');
 if (url.href !== location.href) history.replaceState(null, '', url);
 
 withSaveSession(navigator.locks, async () => {
