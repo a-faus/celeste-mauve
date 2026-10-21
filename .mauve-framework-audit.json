@@ -1,18 +1,18 @@
 {
   "everestVersion": "1.6531.0",
-  "frameworkFiles": 89,
+  "frameworkFiles": 60,
   "randomizerFiles": 0,
   "saveFiles": 0,
   "package": {
-    "id": "mauve-framework-v3",
+    "id": "mauve-framework-v4",
     "version": "1.6531.0",
-    "bytes": 15987573,
-    "files": 89,
+    "bytes": 9104294,
+    "files": 60,
     "chunks": [
       {
         "url": "./data/mauve-framework.tar.gz",
-        "size": 15987573,
-        "sha256": "94c57fa484903b8af10791b94900a2a09a96e369e3a4551170f3aca437f73986"
+        "size": 9104294,
+        "sha256": "f58f5ec2f9b0e2c9d8475acbda571c8e073c31bcfa976776d9fdaf68c76b7c67"
       }
     ]
   }

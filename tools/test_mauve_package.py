@@ -14,7 +14,7 @@ SITE = ROOT / "public-site"
 def main() -> None:
     manifest = json.loads((SITE / "package-manifest.json").read_text(encoding="utf-8"))
     framework = manifest["mauveFramework"]
-    assert framework["id"] == "mauve-framework-v3"
+    assert framework["id"] == "mauve-framework-v4"
     assert framework["version"] == "1.6531.0"
     assert len(framework["chunks"]) == 1
     chunk = framework["chunks"][0]
@@ -40,13 +40,12 @@ def main() -> None:
 
     assert len(names) == len(set(names)), "Runtime archive must not contain duplicate paths."
     assert "CustomCeleste.dll" in names
-    assert "Celeste.Mod.mm.dll" in names
-    assert "Celeste.Mod.mm.deps.json" in names
-    assert "EverestSplash/EverestSplash.dll" in names
-    assert "MMHOOK_Celeste.dll" in names
+    assert "Celeste/Everest/Celeste.Mod.mm.dll" in names
+    assert "Celeste/Everest/Celeste.Mod.mm.deps.json" in names
+    assert "Celeste/Everest/EverestSplash/EverestSplash.dll" in names
     assert "Celeste/Everest/MMHOOK_Celeste.dll" in names
-    assert "MonoMod.RuntimeDetour.dll" in names
-    assert "MonoMod.Core.dll" in names
+    assert "Celeste/Everest/MonoMod.RuntimeDetour.dll" in names
+    assert "Celeste/Everest/MonoMod.Core.dll" in names
     assert "Celeste/Everest/LICENSE.txt" in names
     assert len(names) == framework["files"]
 
@@ -66,8 +65,11 @@ def main() -> None:
     assert "installMauveFramework(root, manifest.mauveFramework)" in boot
     assert "url.searchParams.set('prepatched', '1')" in boot
     assert "url.searchParams.delete('everest')" in boot
+    assert "url.searchParams.delete('autoplay')" in boot
+    assert "wasm?.exports?.Patcher" in boot
+    assert "patcher.PatchCeleste(true)" in boot
     assert "url.searchParams.set('mode', MODE)" in boot
-    print(f"PASS: {framework['files']} Everest {framework['version']} runtime files, no Randomizer or saves, Mauve plus its five declared helpers, prepatched launch settings.")
+    print(f"PASS: {framework['files']} Everest {framework['version']} runtime files, first-launch browser patching, no Randomizer or saves, Mauve plus its five declared helpers.")
 
 
 if __name__ == "__main__":

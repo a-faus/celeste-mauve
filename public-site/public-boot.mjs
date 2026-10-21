@@ -4,7 +4,7 @@ import {migrateSharedSaves, installSaveRouting, withSaveSession} from './shared-
 
 const MODE = 'mauve';
 const NAMESPACE = `public-celeste-${MODE}-v1`;
-const MANIFEST_URL = './package-manifest.json?mauve-package-v5';
+const MANIFEST_URL = './package-manifest.json?mauve-package-v6';
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const title = document.querySelector('#title');
@@ -152,7 +152,7 @@ async function installMauveFramework(root, pkg) {
   const marker = `.PublicPackage-${pkg.id}`;
   try { await root.getFileHandle(marker); progress.value = 92; return; }
   catch (error) { if (error.name !== 'NotFoundError') throw error; }
-  phase = 'Installing the prepatched Everest runtime';
+  phase = 'Installing the browser-compatible Everest runtime';
   status.textContent = 'Installing the browser-compatible Everest loader…';
   const stream = packageStream(pkg, percent => { progress.value = 86 + percent * 0.06; });
   let last = 0;
@@ -161,6 +161,27 @@ async function installMauveFramework(root, pkg) {
   });
   await writeText(root, marker, pkg.id);
   progress.value = 92;
+}
+
+async function waitForGameReady(timeoutMs = 5 * 60 * 1000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (globalThis.gameState?.ready === true) return;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  throw new Error('The Celeste browser runtime did not finish initializing. Reload to retry.');
+}
+
+async function waitForPlayButton(timeoutMs = 30_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const button = [...document.querySelectorAll('button')].find(item =>
+      item.textContent?.replace(/\s/g, '') === 'Play'
+    );
+    if (button && !button.disabled) return button;
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+  throw new Error('Celeste initialized, but its Play button did not become available.');
 }
 
 async function installOfficialMod(root, pkg, index, count) {
@@ -248,12 +269,36 @@ async function start() {
   status.textContent = 'Connecting the existing shared saves…';
   await migrateSharedSaves(origin);
   await installSaveRouting(origin);
-  await writeText(root, '.PublicGameReady', 'mauve-prepatched-v3');
+  await writeText(root, '.PublicGameReady', 'mauve-ready-v4');
   progress.value = 100;
-  status.textContent = 'Starting Mauve with Everest…';
-  await import('./assets/index-9lMdcnsS.js?mauve-only-v5');
+  status.textContent = 'Starting the browser game runtime…';
+  await import('./assets/index-9lMdcnsS.js?mauve-only-v9');
+  await waitForGameReady();
+
+  const patchMarker = `.PublicPatch-${manifest.mauveFramework.id}`;
+  let patched = false;
+  try {
+    await root.getFileHandle(patchMarker);
+    patched = true;
+  } catch (error) {
+    if (error.name !== 'NotFoundError') throw error;
+  }
+  if (!patched) {
+    phase = 'Patching Celeste for the installed Everest version';
+    status.textContent = 'Applying the browser compatibility patch (first launch only)…';
+    const patcher = globalThis.wasm?.exports?.Patcher;
+    if (typeof patcher?.PatchCeleste !== 'function') {
+      throw new Error('The Webleste patcher was not available after runtime initialization.');
+    }
+    const success = await patcher.PatchCeleste(true);
+    if (!success) throw new Error('Webleste could not patch Celeste with the installed Everest runtime.');
+    await writeText(root, patchMarker, manifest.mauveFramework.id);
+  }
+
+  const play = await waitForPlayButton();
   document.querySelector('#startup').remove();
-  document.querySelector('link[href="./public.css"]').remove();
+  document.querySelector('link[href="./public.css"]')?.remove();
+  play.click();
 }
 
 const url = new URL(location.href);
@@ -261,6 +306,7 @@ url.searchParams.set('mode', MODE);
 url.searchParams.set('mods', '1');
 url.searchParams.set('prepatched', '1');
 url.searchParams.delete('everest');
+url.searchParams.delete('autoplay');
 if (url.href !== location.href) history.replaceState(null, '', url);
 
 withSaveSession(navigator.locks, async () => {
